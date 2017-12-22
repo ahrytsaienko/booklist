@@ -8,7 +8,7 @@ class Book {
 }
 
 class UI {
-    
+
     addBookToList(book) {
         const list = document.getElementById('book-list');
         const row = document.createElement('tr');
@@ -37,13 +37,15 @@ class UI {
         setTimeout(function () {
             document.querySelector('.alert').remove();
         }, 3000);
-    }
+    };
 
     deleteBook(target) {
         if (target.className === 'delete') {
             target.parentElement.parentElement.remove();
+            // take previous element sibling
+            Store.removeBook(target.parentElement.previousElementSibling.textContent);
         };
-    }
+    };
 
     clearFields() {
         document.getElementById('title').value = '';
@@ -52,13 +54,59 @@ class UI {
     }
 }
 
+// Local Storage Class
+
+class Store {
+    static getBooks() {
+        let books;
+        if (localStorage.getItem('books') === null) {
+            books = [];
+        } else {
+            books = JSON.parse(localStorage.getItem('books'));
+        }
+
+        return books;
+    }
+
+    static displayBooks() {
+        const books = Store.getBooks();
+
+        books.forEach(function (book) {
+            const ui = new UI;
+            ui.addBookToList(book);
+        });
+
+    };
+
+    static addBook(book) {
+        const books = Store.getBooks();
+        books.push(book);
+
+        localStorage.setItem('books', JSON.stringify(books));
+    }
+
+    static removeBook(isbn) {
+        const books = Store.getBooks();
+        books.forEach(function (book, index) {
+            if (book.isbn === isbn) {
+                books.splice(index, 1);
+            };
+
+            localStorage.setItem('books', JSON.stringify(books));
+        });
+    }
+}
+
+// DOM load event
+document.addEventListener('DOMContentLoaded', Store.displayBooks());
+
 // Event listeners
 document.getElementById('book-form').addEventListener('submit',
     function (e) {
         // Get form values
         const title = document.getElementById('title').value,
             author = document.getElementById('author').value,
-            isbn = document.getElementsByClassName('isbn').value;
+            isbn = document.getElementById('isbn').value;
 
         const book = new Book(title, author, isbn);
         const ui = new UI();
@@ -71,6 +119,10 @@ document.getElementById('book-form').addEventListener('submit',
 
             // Add book to list
             ui.addBookToList(book);
+
+            //Add to LS
+            Store.addBook(book);
+
             ui.showAlert('Book Added!', 'success');
             // Clear fields
             ui.clearFields()
